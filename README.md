@@ -38,16 +38,16 @@
 ### Dependency Injection를 사용해서 서버를 프록시로 변경
 
 런타임 시점에 클라이언트 객체에 DI를 사용해서 `Client -> Server` 에서 `Client -> Proxy` 로 객체 의존관계를 변경해도 `클라이언트 코드는 전혀 변경하지 않아도 된다.` 클라이언트
-입장에서는 변경 사실 조차 모른다. 즉, `DI를 사용하면 클라이언트 코드 변경 없이 유연하게 프록시를 주입할 수 있다.` 
+입장에서는 변경 사실 조차 모른다. 즉, `DI를 사용하면 클라이언트 코드 변경 없이 유연하게 프록시를 주입할 수 있다.`
 
 ### 프록시의 주요 기능
 
 - **`접근 제어`**
-  - 권한에 따른 접근 차단
-  - 캐싱
-  - 지연 로딩
+    - 권한에 따른 접근 차단
+    - 캐싱
+    - 지연 로딩
 - **`부가 기능 추가`**
-  - 원래 서버가 하는일에 더해서 부가 기능을 수행한다.
+    - 원래 서버가 하는일에 더해서 부가 기능을 수행한다.
 
 ### GOF 패턴
 
@@ -55,3 +55,136 @@
 
 - **`프록시 패턴`** : `접근 제어` 가 목적
 - **`데코레이터 패턴`** : `새로운 기능 추가` 가 목적
+
+## 프록시 패턴
+
+### 예시
+
+만약에 `DB` 를 통해 `data` 라는 값을 조회하는데, `1초` 가 소요된다고 가정해보자. 프록시 패턴을 도입하기 전에는 아래와 같은 코드로 구현할 수 있다.
+
+> Client
+
+```java
+public class ProxyPatternClient {
+
+    private final Subject subject;
+
+    public ProxyPatternClient(Subject subject) {
+        this.subject = subject;
+    }
+
+    public void execute() {
+        subject.operation();
+    }
+}
+```
+
+> Subject 인터페이스
+
+```java
+public interface Subject {
+    String operation();
+}
+```
+
+> Subject 인터페이스의 구현체인 RealSubject
+
+```java
+
+@Slf4j
+public class RealSubject implements Subject {
+
+    @Override
+    public String operation() {
+        log.info("실제 객체 호출");
+        sleep(1_000);
+        return "data";
+    }
+
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+위와 같이 구현된 코드를 돌려보면, 다음과 같은 결과를 얻을 수 있다.
+
+> Test
+
+```java
+public class ProxyPatternTest {
+
+    @Test
+    void noProxyTest() {
+        RealSubject realSubject = new RealSubject();
+        ProxyPatternClient client = new ProxyPatternClient(realSubject);
+        client.execute();
+        client.execute();
+        client.execute();
+    }
+}
+```
+
+클라이언트는 3번의 `execute()` 메서드를 호출하며, 총 `3초` 의 시간이 걸린다. 이 때, 프록시 패턴을 도입하고, `프록시 패턴의 핵심` 인 `접근 제어(캐싱)` 를 통해 개선해보겠다.
+
+> CacheProxy
+
+```java
+
+@Slf4j
+public class CacheProxy implements Subject {
+
+    private final Subject target; // RealSubject
+    private String cacheValue;
+
+    public CacheProxy(Subject target) {
+        this.target = target;
+    }
+
+    @Override
+    public String operation() {
+        log.info("프록시 호출");
+        if (cacheValue == null) {
+            cacheValue = target.operation();
+        }
+        // cacheValue가 있다면, RealSubject를 호출하지 않는다. -> 접근 제어
+        return cacheValue;
+    }
+}
+```
+
+`CacheProxy` 클래스는 `Subject` 인터페이스를 구현했다. (`프록시와 서버는 같은 인터페이스` 를 구현해야 클라이언트의 코드 변경이 없다.)
+
+추가로 `target` 은 `RealSubject` 를 참조하고 있어야 하며, `operation` 메서드 내부를 보면, `cacheValue` 값이 `null` 인 경우에만 `RealSubject` 에 접근하도록
+하고, `cacheValue` 값이 있다면, `RealSubject` 를 호출하지 않고 **`접근 제어`** 를 한다.
+
+> Test
+
+```java
+public class ProxyPatternTest {
+
+    @Test
+    void cacheProxyTest() {
+        RealSubject realSubject = new RealSubject();
+        CacheProxy cacheProxy = new CacheProxy(realSubject);
+        ProxyPatternClient client = new ProxyPatternClient(cacheProxy);
+        client.execute();
+        client.execute();
+        client.execute();
+    }
+}
+```
+
+위의 테스트 코드를 실행하면, 아래와 같은 결과를 확인할 수 있고, `3초(3번 RealSubject 접근)` 걸렸던 수행
+시간에서 `1초(처음 RealSubject 접근) + 0.XXX초(RealSubject 접근 제어) + 0.XXX초(RealSubject 접근 제어)` 의 결과를 확인할 수 있다.
+
+<img width="713" alt="스크린샷 2022-04-02 오후 3 17 43" src="https://user-images.githubusercontent.com/23515771/161369728-770b1b5b-de51-4505-8ba3-5cbf7ccb6980.png">
+
+### 핵심
+
+`RealSubject` 코드와 `ProxyClientPattern` 코드를 `전혀 변경하지 않고`, 프록시를 도입해서 `접근 제어` 를 했다는 점이다. 따라서 클라이언트 코드의 변경 없이 자유롭게 프록시를 교체할
+수 있다. 실제 클라이언트 입장에서는 `프록시 객체가 주입 되었는지, 실제 객체가 주입 되었는지` 알 수 없다.
