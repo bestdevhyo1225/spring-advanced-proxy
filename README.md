@@ -388,3 +388,26 @@ V1의 `Controller, Service, Repository` 인터페이스에 대한 `Proxy` 클래
 
 - `Proxy -> Target` 이라는 의존관계를 갖게 된다.
 - 실제 객체 대신 `프록시 객체` 가 주입된다.
+
+## V2 - Controller, Serivce, Repository
+
+인터페이스 뿐만 아니라 `Class` 기반의 `Proxy` 도 구현할 수 있다.
+
+### 기존
+
+> AppV2Config
+
+`Client -> OrderControllerV2Impl(실제 객체) -> OrderServiceV2Impl(실제 객체) -> OrderRepositoryV2Impl(실제 객체)`
+
+### 프록시 도입
+
+> ConcreteProxyConfig
+
+`Client -> OrderControllerV2Proxy(프록시 객체) -> OrderControllerV2Impl(실제 객체) -> OrderServiceV2Proxy(프록시 객체) -> OrderServiceV2Impl(실제 객체) -> OrderRepositoryV2Proxy(프록시 객체) -> OrderRepositoryV2Impl(실제 객체)`
+
+### 정리
+
+- `Target` 을 상속 받아서, `Proxy` 객체를 구현한다.
+    - 다만, `Target` 객체에 `기본 생성자` 가 없는 경우 `super(null)` 을 명시적으로 구현한다.
+      -> **`부가 기능 목적으로 Target 을 상속하는 것이지 Target 의 상위 기능을 사용하려고 상속하는 것이 아니기 때문이다.`**
+- 실제 객체 대신 `프록시 객체` 가 주입된다.
