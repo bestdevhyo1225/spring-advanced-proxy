@@ -347,12 +347,12 @@ public class DecoratorPatternTest {
 }
 ```
 
-`TimeDecorator` 를 구현하고, `DecoratorPatternClient -> TimeDecorator -> MessageDecorator -> RealComponent` 의 런타임 의존관계를 구성하여, 요구 사항을 해결할 수 있다.
+`TimeDecorator` 를 구현하고, `DecoratorPatternClient -> TimeDecorator -> MessageDecorator -> RealComponent` 의 런타임 의존관계를 구성하여,
+요구 사항을 해결할 수 있다.
 
 ### 핵심
 
 데코레이터 패턴은 `MessageDecorator`, `TimeDecorator` 를 체인 형식을 통해 **`부가 기능`** 을 계속해서 추가할 수 있다.
-
 
 ## 프록시 패턴 vs 데코레이터 패턴
 
@@ -360,7 +360,31 @@ public class DecoratorPatternTest {
 
 ### 중요한 것은 의도!
 
-프록시 패턴과 데코레이터 패턴의 모양은 거의 같다. 디자인 패턴에서 두 패턴을 구분하려면, 겉 모양이 아닌 **`패턴을 만든 의도가 중요하다.`**  
+프록시 패턴과 데코레이터 패턴의 모양은 거의 같다. 디자인 패턴에서 두 패턴을 구분하려면, 겉 모양이 아닌 **`패턴을 만든 의도가 중요하다.`**
 
 - `프록시 패턴` : 다른 객체에 대한 **`접근 제어(권한에 따른 접근 차단, 캐싱)`** 를 하기 위해 대리자를 제공
 - `데코레이터 패턴` : 객체에 **`추가 책임(기능)을 동적으로 추가`** 하고, 기능 확장을 위한 유연한 대안 제공
+
+## V1 - Controller, Serivce, Repository
+
+V1의 `Controller, Service, Repository` 인터페이스에 대한 `Proxy` 클래스를 구현한다. 그리고 Bean을 등록할 때, `Controller, Service, Repository` 의
+실제 구현체를 등록하면 안되고, `Proxy` 구현체를 등록해야 한다. 따라서 런타인 객체 의존관계는 다음과 같다.
+
+### 기존
+
+> AppV1Config 클래스에는 아래와 같은 의존관계가 구성되어 있음.
+
+`Client -> OrderControllerV1Impl(실제 객체) -> OrderServiceV1Impl(실제 객체) -> OrderRepositoryV1Impl(실제 객체)` 의 런타임 객체 의존관계가
+이루어졌다.
+
+### 프록시 도입
+
+> InterfaceProxyConfig 클래스에는 아래와 같은 의존관계가 구성되어 있음.
+
+`Client -> OrderControllerV1Proxy(프록시 객체) -> OrderControllerV1Impl(실제 객체) -> OrderServiceV1Proxy(프록시 객체) -> OrderServiceV1Impl(실제 객체) -> OrderRepositoryV1Proxy(프록시 객체) -> OrderRepositoryV1Impl(실제 객체)`
+과 같은 런타임 객체 의존관계가 구성된다.
+
+### 정리
+
+- `Proxy -> Target` 이라는 의존관계를 갖게 된다.
+- 실제 객체 대신 `프록시 객체` 가 주입된다.
