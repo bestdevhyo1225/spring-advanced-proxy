@@ -120,7 +120,7 @@ public class ProxyPatternTest {
 
     @Test
     void noProxyTest() {
-        RealSubject realSubject = new RealSubject();
+        Subject realSubject = new RealSubject();
         ProxyPatternClient client = new ProxyPatternClient(realSubject);
         client.execute();
         client.execute();
@@ -157,7 +157,7 @@ public class CacheProxy implements Subject {
 }
 ```
 
-`CacheProxy` 클래스는 `Subject` 인터페이스를 구현했다. 
+`CacheProxy` 클래스는 `Subject` 인터페이스를 구현했다.
 
 - `프록시와 서버는 같은 인터페이스` 를 구현해야 클라이언트의 코드 변경이 없다.
 
@@ -171,8 +171,8 @@ public class ProxyPatternTest {
 
     @Test
     void cacheProxyTest() {
-        RealSubject realSubject = new RealSubject();
-        CacheProxy cacheProxy = new CacheProxy(realSubject);
+        Subject realSubject = new RealSubject();
+        Subject cacheProxy = new CacheProxy(realSubject);
         ProxyPatternClient client = new ProxyPatternClient(cacheProxy);
         client.execute();
         client.execute();
