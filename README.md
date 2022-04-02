@@ -1,1 +1,1 @@
-# Spring MVC 핵심 원리 고급편 - Proxy
+# Spring 핵심 원리 고급편 - Proxy
