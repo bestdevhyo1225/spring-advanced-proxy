@@ -190,3 +190,165 @@ public class ProxyPatternTest {
 
 `RealSubject` 코드와 `ProxyClientPattern` 코드를 `전혀 변경하지 않고`, 프록시를 도입해서 `접근 제어` 를 했다는 점이다. 따라서 클라이언트 코드의 변경 없이 자유롭게 프록시를 교체할
 수 있다. 실제 클라이언트 입장에서는 `프록시 객체가 주입 되었는지, 실제 객체가 주입 되었는지` 알 수 없다.
+
+## 데코레이터 패턴
+
+### 예시
+
+`DB` 에서 조회한 `data` 값을 반환하는 예시를 들어보겠다.
+
+> Component
+
+```java
+public interface Component {
+    String operation();
+}
+```
+
+> RealComponent
+
+```java
+
+@Slf4j
+public class RealComponent implements Component {
+
+    @Override
+    public String operation() {
+        log.info("RealComponent 실행");
+        return "data";
+    }
+}
+```
+
+> Client
+
+```java
+
+@Slf4j
+public class DecoratorPatternClient {
+
+    private final Component component;
+
+    public DecoratorPatternClient(Component component) {
+        this.component = component;
+    }
+
+    public void execute() {
+        String result = component.operation();
+        log.info("result = {}", result);
+    }
+}
+```
+
+> Test
+
+```java
+public class DecoratorPatternTest {
+
+    @Test
+    void noDecorator() {
+        Component realComponent = new RealComponent();
+        DecoratorPatternClient client = new DecoratorPatternClient(realComponent);
+        client.execute();
+    }
+}
+```
+
+위와 같이 구현할 수 있다. 그런데 `data` 값을 다른 형식으로 변환해서 반환하라는 요구 사항을 받게 되었는데, 이를 해결하려면, `데코레이터 패턴` 을 적용하면 된다.
+
+> MessageDecorator
+
+```java
+
+@Slf4j
+public class MessageDecorator implements Component {
+
+    private final Component component;
+
+    public MessageDecorator(Component component) {
+        this.component = component;
+    }
+
+    @Override
+    public String operation() {
+        log.info("MessageDecorator 실행");
+
+        String result = component.operation();
+        String decoratorResult = "*****" + result + "*****";
+
+        log.info("MessageDecorator 메시지 꾸미기 [적용 전={}, 적용 후={}]", result, decoratorResult);
+
+        return decoratorResult;
+    }
+}
+```
+
+> Test
+
+```java
+public class DecoratorPatternTest {
+
+    @Test
+    void decorator1() {
+        Component realComponent = new RealComponent();
+        Component messageDecorator = new MessageDecorator(realComponent);
+        DecoratorPatternClient client = new DecoratorPatternClient(messageDecorator);
+        client.execute();
+    }
+}
+```
+
+위의 `MessageDecorator` 클래스를 구현하여, `DecoratorPatternClient -> MessageDecorator -> RealComponent` 의 런타임 의존관계를 구성하고, 데코레이터
+패턴의 핵심인 `부가 기능(값을 변환해서 반환)` 을 통해 요구 사항을 해결할 수 있다. 또한 시간 측정을 요구하는 요청이 들어왔다면, `데코레이터 패턴을 체인으로 연결` 해서 구현할 수 있다.
+
+> TimeDecorator
+
+```java
+
+@Slf4j
+public class TimeDecorator implements Component {
+
+    private final Component component;
+
+    public TimeDecorator(Component component) {
+        this.component = component;
+    }
+
+    @Override
+    public String operation() {
+        log.info("TimeDecorator 실행");
+
+        long startTime = System.currentTimeMillis();
+
+        String result = component.operation();
+
+        long endTime = System.currentTimeMillis();
+
+        log.info("TimeDecorator 종료 [resultTime={}ms]", (endTime - startTime));
+
+        return result;
+    }
+}
+```
+
+> Test
+
+```java
+public class DecoratorPatternTest {
+
+    @Test
+    void decorator2() {
+        Component realComponent = new RealComponent();
+        Component messageDecorator = new MessageDecorator(realComponent);
+        Component timeDecorator = new TimeDecorator(messageDecorator);
+        DecoratorPatternClient client = new DecoratorPatternClient(timeDecorator);
+        client.execute();
+    }
+}
+```
+
+`TimeDecorator` 를 구현하고, `DecoratorPatternClient -> TimeDecorator -> MessageDecorator -> RealComponent` 의 런타임 의존관계를 구성하여, 요구 사항을 해결할 수 있다.
+
+### 핵심
+
+데코레이터 패턴은 `MessageDecorator`, `TimeDecorator` 를 체인 형식을 통해 **`부가 기능`** 을 계속해서 추가할 수 있다.
