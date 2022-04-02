@@ -157,7 +157,9 @@ public class CacheProxy implements Subject {
 }
 ```
 
-`CacheProxy` 클래스는 `Subject` 인터페이스를 구현했다. (`프록시와 서버는 같은 인터페이스` 를 구현해야 클라이언트의 코드 변경이 없다.)
+`CacheProxy` 클래스는 `Subject` 인터페이스를 구현했다. 
+
+- `프록시와 서버는 같은 인터페이스` 를 구현해야 클라이언트의 코드 변경이 없다.
 
 추가로 `target` 은 `RealSubject` 를 참조하고 있어야 하며, `operation` 메서드 내부를 보면, `cacheValue` 값이 `null` 인 경우에만 `RealSubject` 에 접근하도록
 하고, `cacheValue` 값이 있다면, `RealSubject` 를 호출하지 않고 **`접근 제어`** 를 한다.
