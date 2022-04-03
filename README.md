@@ -535,3 +535,18 @@ public class JdkDynamicProxyTest {
 
 `Client` -> **`$Proxy1(런타임에 동적으로 생성된 AInterface의 프록시 객체) - handler.invoke()`**
 -> `TimeInvocationHandler(InvocationHandler) - method.invoke(target, args)` -> `AImpl`
+
+## V1 - Controller, Service, Repository (동적 프록시 적용)
+
+### JDK 동적 프록시 적용 전
+
+`Client -> OrderControllerV1Proxy(개발자가 OrderControllerV1 인터페이스를 직접 구현한 프록시 객체) -> OrderControllerV1Impl(실제 객체) -> OrderServiceV1Proxy(개발자가 OrderServiceV1 인터페이스를 직접 구현한 프록시 객체) -> OrderServiceV1Impl(실제 객체) -> OrderRepositoryV1Proxy(개발자가 OrderRepositoryV1 인터페이스를 직접 구현한 프록시 객체) -> OrderRepositoryV1Impl(실제 객체)`
+와 같은 런타임 객체 의존관계를 갖고 있었다.
+
+### JDK 동적 프록시 적용 후
+
+`Client ->
+$Proxy1(런타임 시점에 동적으로 생성된 OrderControllerV1의 프록시 객체) -> LogTraceBasicHandler(InvocationHandler) -> OrderControllerV1Impl(실제 객체)
+$Proxy2(런타임 시점에 동적으로 생성된 OrderServiceV1의 프록시 객체) -> LogTraceBasicHandler(InvocationHandler) -> OrderServiceV1Impl(실제 객체)
+$Proxy3(런타임 시점에 동적으로 생성된 OrderRepositoryV1의 프록시 객체) -> LogTraceBasicHandler(InvocationHandler) -> OrderRepositoryV1Impl(실제 객체)
+`
