@@ -563,6 +563,78 @@ public class JdkDynamicProxyTest {
 
 - JDK 동적 프록시를 실행하기 위해서 `InvocationHandler` 를 사용한 것 처럼, CGLIB에도 `MethodInterceptor` 를 제공한다.
 
+### 예제 코드
+
+> ConcreteService
+
+```java
+@Slf4j
+public class ConcreteService {
+
+    public void call() {
+        log.info("ConcreteService 호출");
+    }
+}
+```
+
+> TimeMethodInteceptor
+
+```java
+@Slf4j
+public class TimeMethodInterceptor implements MethodInterceptor {
+
+    private final Object target;
+
+    public TimeMethodInterceptor(Object target) {
+        this.target = target;
+    }
+
+    @Override
+    public Object intercept(Object obj, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+        log.info("TimeProxy 실행");
+
+        long startTime = System.currentTimeMillis();
+
+        Object result = methodProxy.invoke(target, args); // method 보다 methodProxy 사용하는 것이 더 빠르다고 한다.
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+
+        log.info("TimeProxy 종료 resultTime={}", resultTime);
+
+        return result;
+    }
+}
+```
+
+`method` 보다 `methodProxy` 를 사용하는 것이 성능적으로 유리하다고 한다.
+
+> Test
+
+```java
+@Slf4j
+public class CglibTest {
+
+    @Test
+    void cglib() {
+        ConcreteService target = new ConcreteService();
+
+        // CGLIB를 만들어주는 코드이며, ConcreteService를 상속받아서 프록시 객체를 생성한다.
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(ConcreteService.class); // 구체 클래스를 지정한다.
+        enhancer.setCallback(new TimeMethodInterceptor(target));
+        ConcreteService proxy = (ConcreteService) enhancer.create(); // 지정한 구체 클래스를 상속 받아서 프록시를 생성한다.
+
+        log.info("targetClass={}", target.getClass());
+        log.info("proxyClass={}", proxy.getClass());
+
+        proxy.call();
+    }
+}
+```
+
+`Enhancer` 클래스를 통해 CGLIB 프록시를 생성할 수 있으며, `구체 클래스를 상속 받아서` 프록시 객체를 생성한다.
+
 ### CGLIB 런타임 객체 의존관계
 
 `Client` -> `CGLIB Proxy(ConcreteService를 상속 받은 프록시 객체)` -> `TimeMethodInterceptor(MethodInterceptor)` -> `ConcreteService(실제 객체)`
