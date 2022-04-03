@@ -428,5 +428,110 @@ V1의 `Controller, Service, Repository` 인터페이스에 대한 `Proxy` 클래
 ### 주의!
 
 클래스와 메서드의 메타정보를 사용해서 애플리케이션을 동적으로 유연하게 만들 수 있다. 하지만 리플렉션 기술은 런타임에 동작하기 때문에 **`컴파일 시점에 오류를 잡을 수 없다.`**
-가장 좋은 오류는 `개발자가 즉시 확인할 수 있는 컴파일 오류` 이며, 가장 무서운 오류는 `사용자가 직접 실행할 때, 발생하는 런타임 오류` 이다.
-따라서 **`리플렉션은 일반적으로 사용하면 안된다.`**
+가장 좋은 오류는 `개발자가 즉시 확인할 수 있는 컴파일 오류` 이며, 가장 무서운 오류는 `사용자가 직접 실행할 때, 발생하는 런타임 오류` 이다. 따라서 **`리플렉션은 일반적으로 사용하면 안된다.`**
+
+## JDK 동적 프록시
+
+해당 기술을 사용하면, 개발자가 직접 프록시 클래스를 만들지 않아도 된다. 이름 그대로 프록시 객체를 동적으로 런타임 시점에 개발자 대신 만들어준다.
+
+### 중요!
+
+JDK 동적 프록시는 `인터페이스` 기반으로 프록시를 동적으로 만들어 주기 때문에 `인터페이스가 필수` 이다.
+
+### 예제
+
+> AInterface
+
+```java
+public interface AInterface {
+    String call();
+}
+```
+
+> AImpl
+
+```java
+
+@Slf4j
+public class AImpl implements AInterface {
+
+    @Override
+    public String call() {
+        log.info("A 호출");
+        return "a";
+    }
+}
+```
+
+> TimeInvocationHandler
+
+```java
+
+@Slf4j
+public class TimeInvocationHandler implements InvocationHandler {
+
+    private final Object target;
+
+    public TimeInvocationHandler(Object target) {
+        this.target = target;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        log.info("TimeProxy 실행");
+
+        long startTime = System.currentTimeMillis();
+
+        Object result = method.invoke(target, args);
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+
+        log.info("TimeProxy 종료 resultTime={}", resultTime);
+
+        return result;
+    }
+}
+```
+
+> Test
+
+```java
+
+@Slf4j
+public class JdkDynamicProxyTest {
+
+    @Test
+    void dynamicA() {
+        AInterface target = new AImpl();
+        TimeInvocationHandler handler = new TimeInvocationHandler(target);
+
+        AInterface proxy = (AInterface) Proxy.newProxyInstance(AInterface.class.getClassLoader(), new Class[]{AInterface.class}, handler);
+        proxy.call();
+
+        log.info("targetClass={}", target.getClass());
+        log.info("proxyClass={}", proxy.getClass());
+    }
+}
+```
+
+위와 같은 코드에서 `proxy` 라는 변수의 `call()` 메서드 호출하면, `TimeInvocationHandler` 클래스의 `invoke()` 메서드 가 호출되어 실행된다. 이 때, `invoke()`
+메서드 내부에서는 `target` 의 `call()` 을 호출해야 하기 때문에 `method.invoke(target, args)` 를 호출한다.
+
+### 예제 코드에 대한 실행 순서 정리
+
+1. 클라이언트는 JDK 동적 프록시의 `call()` 을 실행한다.
+2. JDK 동적 프록시는 `InvocationHanlder.invoke()` 를 호출한다. `TimeInvocationHandler` 가 구현체로 있기
+   때문에 `TimeInvocationHandler.invoke()` 가 호출된다.
+3. `TimeInvocationHandler` 가 내부 로직을 수행하고, `method.invoke(target, args)` 를 호출해서 `target` 의 실제 객체인 `AImpl` 을 호출한다.
+4. `AImpl` 의 `call()` 이 실행된다.
+5. `AImpl` 의 `call()` 의 실행이 끝나면, `TimeInvocationHandler` 로 응답이 돌아온다. 시간 로그를 출력하고, 결과를 반환한다.
+
+### JDK 동적 프록시 도입 전, 런타임 객체 의존관계
+
+`Client` -> **`AProxy(개발자가 AInterface를 직접 구현한 프록시 객체)`** -> `AImpl(AInterface를 구현한 실제 객체)`
+
+### JDK 동적 프록시 도입 후, 런타임 객체 의존관계
+
+`Client` -> **`$Proxy1(런타임에 동적으로 생성된 AInterface의 프록시 객체) - handler.invoke()`**
+-> `TimeInvocationHandler(InvocationHandler) - method.invoke(target, args)` -> `AImpl`
