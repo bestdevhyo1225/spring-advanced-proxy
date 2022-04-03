@@ -540,7 +540,10 @@ public class JdkDynamicProxyTest {
 
 ### JDK 동적 프록시 적용 전
 
-`Client -> OrderControllerV1Proxy(개발자가 OrderControllerV1 인터페이스를 직접 구현한 프록시 객체) -> OrderControllerV1Impl(실제 객체) -> OrderServiceV1Proxy(개발자가 OrderServiceV1 인터페이스를 직접 구현한 프록시 객체) -> OrderServiceV1Impl(실제 객체) -> OrderRepositoryV1Proxy(개발자가 OrderRepositoryV1 인터페이스를 직접 구현한 프록시 객체) -> OrderRepositoryV1Impl(실제 객체)`
+`Client` ->
+`OrderControllerV1Proxy(개발자가 OrderControllerV1 인터페이스를 직접 구현한 프록시 객체)` -> `OrderControllerV1Impl(실제 객체)` ->
+`OrderServiceV1Proxy(개발자가 OrderServiceV1 인터페이스를 직접 구현한 프록시 객체)` -> `OrderServiceV1Impl(실제 객체)` -> 
+`OrderRepositoryV1Proxy(개발자가 OrderRepositoryV1 인터페이스를 직접 구현한 프록시 객체)` -> `OrderRepositoryV1Impl(실제 객체)`
 와 같은 런타임 객체 의존관계를 갖고 있었다.
 
 ### JDK 동적 프록시 적용 후
