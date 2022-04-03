@@ -551,7 +551,10 @@ public class JdkDynamicProxyTest {
 ### JDK 동적 프록시 적용 후
 
 `Client` ->
-`$Proxy1(런타임 시점에 동적으로 생성된 OrderControllerV1의 프록시 객체)` -> `LogTraceBasicHandler(InvocationHandler)` -> `OrderControllerV1Impl(실제 객체)`
-`$Proxy2(런타임 시점에 동적으로 생성된 OrderServiceV1의 프록시 객체)` -> `LogTraceBasicHandler(InvocationHandler)` -> `OrderServiceV1Impl(실제 객체)`
-`$Proxy3(런타임 시점에 동적으로 생성된 OrderRepositoryV1의 프록시 객체)` -> `LogTraceBasicHandler(InvocationHandler)` -> `OrderRepositoryV1Impl(실제 객체)`
+
+| Proxy (런타임 시점에 동적으로 생성된 프록시) | InvocationHandler (Proxy에 의해서 Target을 호출하는 핸들러) |  Target |
+| :-: | :-: | :-: |
+| `$Proxy1(OrderControllerV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderControllerV1Impl` -> |
+| `$Proxy2(OrderServiceV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderServiceV1Impl` -> |
+| `$Proxy3(OrderRepositoryV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderRepositoryV1Impl` |
 `
