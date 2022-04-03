@@ -560,3 +560,15 @@ public class JdkDynamicProxyTest {
 
 `바이트 코드를 조작` 해서 동적으로 클래스를 생성하는 기술을 제공한다. CGLIB을 사용하면, 인터페이스가 없어도 구체 클래스만 가지고 동적 프록시를 생성할 수 있다. 우리가 직접적으로 CGLIB을 사용할 경우는
 거의 없다. 스프링의 `ProxyFactory` 라는 것이 해당 기술을 편리하게 사용할 수 있도록 해주기 때문이다.
+
+- JDK 동적 프록시를 실행하기 위해서 `InvocationHandler` 를 사용한 것 처럼, CGLIB에도 `MethodInterceptor` 를 제공한다.
+
+### CGLIB 런타임 객체 의존관계
+
+`Client` -> `CGLIB Proxy(ConcreteService를 상속 받은 프록시 객체)` -> `TimeMethodInterceptor(MethodInterceptor)` -> `ConcreteService(실제 객체)`
+
+### CGLIB 제약 사항
+
+- 부모 클래스의 생성자를 체크해야한다. -> CGLIB은 자식 클래스를 동적으로 생성하기 때문에 `기본 생성자` 가 필요하다.
+- 클래스에 `final` 키워드가 붙으면, 상속이 불가능하다. -> CGLIB에서는 예외가 발생한다.
+- 메서드에 `final` 키워드가 붙으면, 오버라이딩 할 수 없다. -> CGLIB에서는 프록시 로직이 동작하지 않는다.
