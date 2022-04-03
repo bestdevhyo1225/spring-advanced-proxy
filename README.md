@@ -595,7 +595,8 @@ public class TimeMethodInterceptor implements MethodInterceptor {
 
         long startTime = System.currentTimeMillis();
 
-        Object result = methodProxy.invoke(target, args); // method 보다 methodProxy 사용하는 것이 더 빠르다고 한다.
+        // method 보다 methodProxy 사용하는 것이 더 빠르다고 한다.
+        Object result = methodProxy.invoke(target, args);
 
         long endTime = System.currentTimeMillis();
         long resultTime = endTime - startTime;
@@ -606,8 +607,6 @@ public class TimeMethodInterceptor implements MethodInterceptor {
     }
 }
 ```
-
-`method` 보다 `methodProxy` 를 사용하는 것이 성능적으로 유리하다고 한다.
 
 > Test
 
