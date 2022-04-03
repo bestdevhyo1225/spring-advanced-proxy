@@ -557,4 +557,3 @@ public class JdkDynamicProxyTest {
 | `$Proxy1(OrderControllerV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderControllerV1Impl` -> |
 | `$Proxy2(OrderServiceV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderServiceV1Impl` -> |
 | `$Proxy3(OrderRepositoryV1의 프록시 객체)` -> | `LogTraceBasicHandler` -> | `OrderRepositoryV1Impl` |
-`
