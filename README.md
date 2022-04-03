@@ -542,11 +542,23 @@ public class JdkDynamicProxyTest {
 
 `Client` ->
 
+| Proxy (개발자가 인터페이스를 직접 구현한 프록시) | Target | | :-: | :-: | |||
+
+- `OrderControllerV1Proxy(프록시 객체)` -> `OrderControllerV1Impl(실제 객체)` ->
+- `OrderServiceV1Proxy(프록시 객체)` -> `OrderServiceV1Impl(실제 객체)` ->
+- `OrderRepositoryV1Proxy(프록시 객체)` -> `OrderRepositoryV1Impl(실제 객체)`
+
 ### JDK 동적 프록시 적용 후
 
 `Client` ->
 
+| Proxy (런타임 시점에 동적으로 생성된 프록시) | InvocationHandler (Proxy에 의해서 Target을 호출하는 핸들러) | Target | | :-: | :-: | :-: | | | |
+
+- `$Proxy1(OrderControllerV1의 프록시 객체)` -> `LogTraceBasicHandler` -> `OrderControllerV1Impl` ->
+- `$Proxy2(OrderServiceV1의 프록시 객체)` -> `LogTraceBasicHandler` -> `OrderServiceV1Impl` ->
+- `$Proxy3(OrderRepositoryV1의 프록시 객체)` -> `LogTraceBasicHandler` -> `OrderRepositoryV1Impl`
+
 ## CGLIB (Code Generator Library)
 
-`바이트 코드를 조작` 해서 동적으로 클래스를 생성하는 기술을 제공한다. CGLIB을 사용하면, 인터페이스가 없어도 구체 클래스만 가지고 동적 프록시를 생성할 수 있다. 우리가 직접적으로 CGLIB을 사용할 경우는 거의 없다. 
-스프링의 `ProxyFactory` 라는 것이 해당 기술을 편리하게 사용할 수 있도록 도와주기 때문이다.
+`바이트 코드를 조작` 해서 동적으로 클래스를 생성하는 기술을 제공한다. CGLIB을 사용하면, 인터페이스가 없어도 구체 클래스만 가지고 동적 프록시를 생성할 수 있다. 우리가 직접적으로 CGLIB을 사용할 경우는
+거의 없다. 스프링의 `ProxyFactory` 라는 것이 해당 기술을 편리하게 사용할 수 있도록 해주기 때문이다.
