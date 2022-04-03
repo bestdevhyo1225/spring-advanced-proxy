@@ -542,11 +542,11 @@ public class JdkDynamicProxyTest {
 
 `Client` ->
 
-| Proxy | | Target | |
-| :-: | :-: | :-: | :-: |
-| `OrderControllerV1Proxy(개발자가 OrderControllerV1 인터페이스를 직접 구현한 프록시 객체)` | -> | `OrderControllerV1Impl(실제 객체)` | -> |
-| `OrderServiceV1Proxy(개발자가 OrderServiceV1 인터페이스를 직접 구현한 프록시 객체)` | -> | `OrderServiceV1Impl(실제 객체)` | -> | 
-| `OrderRepositoryV1Proxy(개발자가 OrderRepositoryV1 인터페이스를 직접 구현한 프록시 객체)` | -> | `OrderRepositoryV1Impl(실제 객체)` | |
+| Proxy | Target |
+| :-: | :-: |
+| `OrderControllerV1Proxy(개발자가 OrderControllerV1 인터페이스를 직접 구현한 프록시 객체)` -> | `OrderControllerV1Impl(실제 객체)` -> |
+| `OrderServiceV1Proxy(개발자가 OrderServiceV1 인터페이스를 직접 구현한 프록시 객체)` -> | `OrderServiceV1Impl(실제 객체)` -> | 
+| `OrderRepositoryV1Proxy(개발자가 OrderRepositoryV1 인터페이스를 직접 구현한 프록시 객체)` -> | `OrderRepositoryV1Impl(실제 객체)` |
 
 ### JDK 동적 프록시 적용 후
 
