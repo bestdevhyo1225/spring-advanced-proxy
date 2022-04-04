@@ -653,3 +653,63 @@ public class CglibTest {
 
 프록시에 적용하는 부가 기능 로직이다. JDK 동적 프록시가 제공하는 `InvocationHandler` 와 CGLIB에서 제공하는 `MethodInterceptor` 의 개념과 유사하다.
 프록시 팩토리를 사용하면, 둘 대신에 `Advice`를 사용하면 된다. 
+
+### 예제 코드
+
+> TimeAdvice
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+
+@Slf4j
+public class TimeAdvice implements MethodInterceptor {
+
+    @Override
+    public Object invoke(MethodInvocation invocation) throws Throwable {
+        log.info("TimeProxy 실행");
+
+        long startTime = System.currentTimeMillis();
+
+        Object result = invocation.proceed(); // Target 클래스를 호출하고 결과를 받는다.
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+
+        log.info("TimeProxy 종료 resultTime={}", resultTime);
+
+        return result;
+    }
+}
+```
+
+> Test
+
+```java
+@Slf4j
+public class ProxyFactoryTest {
+
+    @Test
+    @DisplayName("인터페이스가 있으면, JDK 동적 프록시 사용")
+    void interfaceProxy() {
+        ServiceInterface target = new ServiceImpl();
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+        proxyFactory.addAdvice(new TimeAdvice());
+
+        ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+        log.info("targetClass={}", target.getClass());
+        log.info("proxyClass={}", proxy.getClass());
+
+        proxy.save();
+
+        assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+        assertThat(AopUtils.isJdkDynamicProxy(proxy)).isTrue();
+        assertThat(AopUtils.isCglibProxy(proxy)).isFalse();
+    }
+}
+```
+
+프록시 팩토리를 생성할 때, `new ProxyFactory(target)` 을 통해 생성자에 호출 대상을 함께 넘겨준다. 프록시 팩토리는 이 인스턴스 정보를 기반으로 프록시를
+만들어낸다. 그리고 `proxyFactory.addAdvice(new TimeAdvice())` 을 통해 부가 기능 로직을 설정한다.
