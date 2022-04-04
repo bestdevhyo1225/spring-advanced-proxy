@@ -539,11 +539,11 @@ public class JdkDynamicProxyTest {
 ## V1 - Controller, Service, Repository (동적 프록시 적용)
 
 ### JDK 동적 프록시 적용 전
- 
+
 > `Proxy (개발자가 인터페이스를 직접 구현한 프록시)` -> `Target`
 
-`Client` -> 
-`OrderControllerV1Proxy(프록시 객체)` -> `OrderControllerV1Impl(실제 객체)` -> 
+`Client` ->
+`OrderControllerV1Proxy(프록시 객체)` -> `OrderControllerV1Impl(실제 객체)` ->
 `OrderServiceV1Proxy(프록시 객체)` -> `OrderServiceV1Impl(실제 객체)` ->
 `OrderRepositoryV1Proxy(프록시 객체)` -> `OrderRepositoryV1Impl(실제 객체)`
 
@@ -568,6 +568,7 @@ public class JdkDynamicProxyTest {
 > ConcreteService
 
 ```java
+
 @Slf4j
 public class ConcreteService {
 
@@ -580,6 +581,7 @@ public class ConcreteService {
 > TimeMethodInteceptor
 
 ```java
+
 @Slf4j
 public class TimeMethodInterceptor implements MethodInterceptor {
 
@@ -611,6 +613,7 @@ public class TimeMethodInterceptor implements MethodInterceptor {
 > Test
 
 ```java
+
 @Slf4j
 public class CglibTest {
 
@@ -636,7 +639,8 @@ public class CglibTest {
 
 ### CGLIB 런타임 객체 의존관계
 
-`Client` -> `CGLIB Proxy(ConcreteService를 상속 받은 프록시 객체)` -> `TimeMethodInterceptor(MethodInterceptor)` -> `ConcreteService(실제 객체)`
+`Client` -> `CGLIB Proxy(ConcreteService를 상속 받은 프록시 객체)` -> `TimeMethodInterceptor(MethodInterceptor)`
+-> `ConcreteService(실제 객체)`
 
 ### CGLIB 제약 사항
 
@@ -646,15 +650,15 @@ public class CglibTest {
 
 ## Proxy Factory
 
-인터페이스가 있으면, JDK 동적 프록시를 사용하고, 구체 클래스만 있다면, CGLIB을 사용한다.
-프록시 팩토리에서는 `Advice` 를 호출하는 전용 `InvocationHandler` 와 `MethodInterceptor` 를 내부에서 사용한다.
+인터페이스가 있으면, JDK 동적 프록시를 사용하고, 구체 클래스만 있다면, CGLIB을 사용한다. 프록시 팩토리에서는 `Advice` 를 호출하는 전용 `InvocationHandler`
+와 `MethodInterceptor` 를 내부에서 사용한다.
 
 ### Advice
 
-프록시에 적용하는 부가 기능 로직이다. JDK 동적 프록시가 제공하는 `InvocationHandler` 와 CGLIB에서 제공하는 `MethodInterceptor` 의 개념과 유사하다.
-프록시 팩토리를 사용하면, 둘 대신에 `Advice`를 사용하면 된다. 
+프록시에 적용하는 부가 기능 로직이다. JDK 동적 프록시가 제공하는 `InvocationHandler` 와 CGLIB에서 제공하는 `MethodInterceptor` 의 개념과 유사하다. 프록시 팩토리를 사용하면,
+둘 대신에 `Advice`를 사용하면 된다.
 
-### 예제 코드
+### 인터페이스 기반의 프록시 예제 코드 - JDK 동적 프록시
 
 > TimeAdvice
 
@@ -687,6 +691,7 @@ public class TimeAdvice implements MethodInterceptor {
 > Test
 
 ```java
+
 @Slf4j
 public class ProxyFactoryTest {
 
@@ -711,5 +716,79 @@ public class ProxyFactoryTest {
 }
 ```
 
-프록시 팩토리를 생성할 때, `new ProxyFactory(target)` 을 통해 생성자에 호출 대상을 함께 넘겨준다. 프록시 팩토리는 이 인스턴스 정보를 기반으로 프록시를
-만들어낸다. 그리고 `proxyFactory.addAdvice(new TimeAdvice())` 을 통해 부가 기능 로직을 설정한다.
+프록시 팩토리를 생성할 때, `new ProxyFactory(target)` 을 통해 생성자에 호출 대상을 함께 넘겨준다. 프록시 팩토리는 이 인스턴스 정보를 기반으로 프록시를 만들어낸다.
+그리고 `proxyFactory.addAdvice(new TimeAdvice())` 을 통해 부가 기능 로직을 설정한다.
+
+### 클래스 기반의 프록시 예제 코드 - CGLIB 프록시
+
+> Test
+
+```java
+
+@Slf4j
+public class ProxyFactoryTest {
+
+    @Test
+    @DisplayName("구체 클래스만 있으면, CGLIB 사용")
+    void concreteProxy() {
+        ConcreteService target = new ConcreteService();
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+        proxyFactory.addAdvice(new TimeAdvice());
+
+        ConcreteService proxy = (ConcreteService) proxyFactory.getProxy();
+
+        log.info("targetClass={}", target.getClass());
+        log.info("proxyClass={}", proxy.getClass());
+
+        proxy.call();
+
+        assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+        assertThat(AopUtils.isJdkDynamicProxy(proxy)).isFalse();
+        assertThat(AopUtils.isCglibProxy(proxy)).isTrue();
+    }
+}
+```
+
+`ConcreteService` 구체 클래스를 생성하고, 해당 객체를 `ProxyFactory` 생성시, 넘겨주면 CGLIB 기반의 프록시 객체가 생성된다.
+
+> Test
+
+```java
+
+@Slf4j
+public class ProxyFactoryTest {
+    
+    @Test
+    @DisplayName("proxyTargetClass 옵션을 사용하면, 인터페이스가 있어도 CGLIB을 사용하고, 클래스 기반 프록시 사용")
+    void proxyTargetClass() {
+        ServiceInterface target = new ServiceImpl();
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+        proxyFactory.setProxyTargetClass(true); // true -> CGLIB 기반으로 만들어진다.
+        proxyFactory.addAdvice(new TimeAdvice());
+
+        ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+        log.info("targetClass={}", target.getClass());
+        log.info("proxyClass={}", proxy.getClass());
+
+        proxy.save();
+
+        assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+        assertThat(AopUtils.isJdkDynamicProxy(proxy)).isFalse();
+        assertThat(AopUtils.isCglibProxy(proxy)).isTrue();
+    }
+}
+```
+
+인터페이스가 있는 경우에서 CGLIB을 사용하고 싶으면, **`ProxyTargetClass`** 옵션을 `true` 로 설정하면 된다. (실무에서 자주 쓰인다.)
+
+### 프록시 팩토리의 기술 선택 방법
+
+- 대상 인터페이스가 있으면 : JDK 동적 프록시, 인터페이스 기반 프록시
+- 대상 인터페이스가 없으면 : CGLIB, 구체 클래스 기반 프록시
+- **`ProxyTargetClass`** : CGLIB, 구체 클래스 기반 프록시, `인터페이스 여부와 상관 없음`
+
+### 참고
+
+Spring Boot에서는 AOP를 적용할 때, 기본적으로 `proxyTargetClass=true` 로 설정해서 사용한다. 즉, 항상 CGLIB를 사용해서 구체 클래스 기반으로
+프록시를 생성한다.
