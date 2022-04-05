@@ -858,6 +858,6 @@ public class MultiAdvisorTest {
 스프링 **`AOP 적용 수 만큼 프록시가 생성된다고 착각`** 하게 된다. 스프링은 AOP를 적용할 때, 최적화를 진행해서 `프록시는 하나만 만들고`, `하나의 프록시에 여러 어드바이저` 를 적용한다.
 정리하면, **`하나의 Target에 여러 AOP가 동시에 적용되어도, 스프링 AOP는 Target마다 하나의 프록시만 생성한다.`** (**`이 부분을 꼭 기억할 것!!!`**)
 
-<img width="1342" alt="image" src="https://user-images.githubusercontent.com/23515771/161758216-56890808-1727-46fb-9e6b-5174c7c6bd27.png">
+<img width="1712" alt="image" src="https://user-images.githubusercontent.com/23515771/161758944-b6f2eb14-f6ed-48be-9d87-ed324e361837.png">
 
 
