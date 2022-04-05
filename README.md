@@ -757,7 +757,7 @@ public class ProxyFactoryTest {
 
 @Slf4j
 public class ProxyFactoryTest {
-    
+
     @Test
     @DisplayName("proxyTargetClass 옵션을 사용하면, 인터페이스가 있어도 CGLIB을 사용하고, 클래스 기반 프록시 사용")
     void proxyTargetClass() {
@@ -790,12 +790,11 @@ public class ProxyFactoryTest {
 
 ### 참고
 
-Spring Boot에서는 AOP를 적용할 때, 기본적으로 `proxyTargetClass=true` 로 설정해서 사용한다. 즉, 항상 CGLIB를 사용해서 구체 클래스 기반으로
-프록시를 생성한다.
+Spring Boot에서는 AOP를 적용할 때, 기본적으로 `proxyTargetClass=true` 로 설정해서 사용한다. 즉, 항상 CGLIB를 사용해서 구체 클래스 기반으로 프록시를 생성한다.
 
 ## 포인트컷, 어드바이스, 어드바이저
 
-- 포인트컷 (PointCut) : `어디에 부가 기능을 적용할지, 어디에 부가 기능을 적용하지 않을지` 판단하는 `필터링` 로직이다. 주로 `클래스와 메서드 이름` 으로 필터링한다. 
+- 포인트컷 (PointCut) : `어디에 부가 기능을 적용할지, 어디에 부가 기능을 적용하지 않을지` 판단하는 `필터링` 로직이다. 주로 `클래스와 메서드 이름` 으로 필터링한다.
 - 어드바이스 (Advice) : 프록시가 호출하는 `부가 기능` 이다. (프록시 로직)
 - 어드바이저 (Advisor) : 단순하게 `하나의 포인트컷` 과 `하나의 어드바이스` 를 가지고 있는 것이다. (포인트컷1 + 어드바이스1)
 
@@ -813,5 +812,52 @@ Spring Boot에서는 AOP를 적용할 때, 기본적으로 `proxyTargetClass=tru
 ### 중요
 
 - **`프록시 팩토리는 어드바이저(하나의 포인트컷 + 하나의 어드바이스)가 필수이다.`**
+
+### 여러 어드바이스 적용하기 (중요!)
+
+> Test
+
+```java
+public class MultiAdvisorTest {
+
+    @Test
+    @DisplayName("하나의 프록시, 여러 어드바이저")
+    void multiAdvisorTest2() {
+        DefaultPointcutAdvisor advisor1 = new DefaultPointcutAdvisor(Pointcut.TRUE, new Advice1());
+        DefaultPointcutAdvisor advisor2 = new DefaultPointcutAdvisor(Pointcut.TRUE, new Advice2());
+
+        ServiceInterface target = new ServiceImpl();
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+        proxyFactory.addAdvisor(advisor2);
+        proxyFactory.addAdvisor(advisor1);
+
+        ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+        proxy.save();
+    }
+
+    @Slf4j
+    static class Advice1 implements MethodInterceptor {
+        @Override
+        public Object invoke(MethodInvocation invocation) throws Throwable {
+            log.info("advice1 호출");
+            return invocation.proceed();
+        }
+    }
+
+    @Slf4j
+    static class Advice2 implements MethodInterceptor {
+        @Override
+        public Object invoke(MethodInvocation invocation) throws Throwable {
+            log.info("advice2 호출");
+            return invocation.proceed();
+        }
+    }
+}
+```
+
+스프링 AOP 적용 수 만큼 프록시가 생성된다고 착각하게 된다. 스프링은 AOP를 적용할 때, 최적화를 진행해서 `프록시는 하나만 만들고`, `하나의 프록시에 여러 어드바이저` 를 적용한다.
+정리하면, **`하나의 Target에 여러 AOP가 동시에 적용되어도, 스프링 AOP는 Target마다 하나의 프록시만 생성한다.`** (**`이 부분을 꼭 기억할 것!!!`**)
+
+<img width="1342" alt="image" src="https://user-images.githubusercontent.com/23515771/161758216-56890808-1727-46fb-9e6b-5174c7c6bd27.png">
 
 
