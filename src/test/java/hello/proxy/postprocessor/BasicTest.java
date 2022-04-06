@@ -21,7 +21,7 @@ public class BasicTest {
         a.helloA();
 
         // B는 Bean으로 등록되지 않았다.
-        Assertions.assertThrows(NoSuchBeanDefinitionException.class, () -> applicationContext.getBean("beanB", B.class));
+        Assertions.assertThrows(NoSuchBeanDefinitionException.class, () -> applicationContext.getBean(B.class));
     }
 
     @Slf4j

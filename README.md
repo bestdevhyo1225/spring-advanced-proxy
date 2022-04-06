@@ -860,7 +860,8 @@ public class MultiAdvisorTest {
 스프링 **`AOP 적용 수 만큼 프록시가 생성된다고 착각`** 하게 된다. 스프링은 AOP를 적용할 때, 최적화를 진행해서 `프록시는 하나만 만들고`, `하나의 프록시에 여러 어드바이저` 를 적용한다.
 정리하면, **`하나의 Target에 여러 AOP가 동시에 적용되어도, 스프링 AOP는 Target마다 하나의 프록시만 생성한다.`** (**`이 부분을 꼭 기억할 것!!!`**)
 
-예를 들면, `LogTraceAdvisor`, `TimeTraceAdvisor` 와 같은 `어드바이저(하나의 포인트컷 + 하나의 어드바이스)` 들이 있을 때, `Target` 에 대한 **`프록시 객체는 하나만 생성된다.`** 생성된 하나의 프록시 객체가
+예를 들면, `LogTraceAdvisor`, `TimeTraceAdvisor` 와 같은 `어드바이저(하나의 포인트컷 + 하나의 어드바이스)` 들이 있을 때, `Target` 에
+대한 **`프록시 객체는 하나만 생성된다.`** 생성된 하나의 프록시 객체가
 `LogTraceAdvisor`, `TimeTraceAdvisor` 를 차례대로 호출하고, 마지막에 `Target` 을 호출하는 흐름으로 이해하면 된다.
 
 <img width="1712" alt="image" src="https://user-images.githubusercontent.com/23515771/161758944-b6f2eb14-f6ed-48be-9d87-ed324e361837.png">
@@ -871,3 +872,80 @@ public class MultiAdvisorTest {
 2. **`전달`** - 생성된 객체를 빈 저장소에 등록하기 직전에 `빈 후처리기에 전달한다.`
 3. **`후 처리 작업`** - 빈 후처리기는 전달된 스프링 빈 객체를 조작하거나, 다른 객체로 바꿔치기 할 수 있다.
 4. **`등록`** - 빈 후처리기는 빈을 반환한다. 전달된 빈을 그대로 반환하면, 해당 빈이 등록되고, 바꿔치기 하면 다른 객체가 빈 저장소에 등록된다.
+
+### BeanPostProcessor Interface
+
+- `postProcessBeforeInitialization()` : 객체 생성 이후에 `@PostConstruct` 같은 초기화가 발생하기 전에 호출된다.
+- `postProcessAfterInitialization()` : 객체 생성 이후에 `@PostConstruct` 같은 초기화가 발생한 다음에 호출된다.
+
+### 빈 후처리기에서 객체 바꿔지는 예제 코드
+
+> Test
+
+```java
+public class BeanPostProcessorTest {
+
+    @Test
+    void basicConfig() {
+        // 스프링 컨테이너라고 보면된다.
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(BeanPostProcessorConfig.class);
+
+        // beanA의 이름을 B 객체가 Bean으로 등록된다.
+        B b = applicationContext.getBean("beanA", B.class);
+        b.helloB();
+
+        // A는 Bean으로 등록되지 않았다.
+        Assertions.assertThrows(NoSuchBeanDefinitionException.class, () -> applicationContext.getBean(A.class));
+    }
+
+    @Slf4j
+    @Configuration
+    static class BeanPostProcessorConfig {
+        @Bean(name = "beanA")
+        public A a() {
+            return new A();
+        }
+
+        @Bean
+        public AToBPostProcessor helloPostProcessor() {
+            return new AToBPostProcessor();
+        }
+    }
+
+    @Slf4j
+    static class A {
+        public void helloA() {
+            log.info("helloA");
+        }
+    }
+
+    @Slf4j
+    static class B {
+        public void helloB() {
+            log.info("helloB");
+        }
+    }
+
+    @Slf4j
+    static class AToBPostProcessor implements BeanPostProcessor {
+        @Override
+        public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+            log.info("beanName={}, bean={}", beanName, bean);
+
+            if (bean instanceof A) {
+                return new B();
+            }
+
+            return bean;
+        }
+    }
+}
+```
+
+`AToBPostProcessor` 클래스는 bean 객체가 `A` 인스턴스인 경우, `B` 객체를 생성하고, 반환한다. 중요한 것은 `beanA` 라는 이름을 가졌는데, `B` 객체이다.
+
+### 정리
+
+- 빈 후처리기는 빈을 조작하고, 변경할 수 있는 후킹 포인트이다.
+- 일반적으로 스프링 컨테이너가 등록하는, 특히 컴포넌트 스캔의 대상이 되는 빈들은 중간에 조작할 방법이 없는데, `빈 후처리기를 사용하면 등록하는 모든 빈을 중간에 조작할 수 있다.` (**`즉, Bean 객체를
+  Proxy 객체로 교체하는 것도 가능하다는 얘기!`**)
