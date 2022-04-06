@@ -878,7 +878,7 @@ public class MultiAdvisorTest {
 - `postProcessBeforeInitialization()` : 객체 생성 이후에 `@PostConstruct` 같은 초기화가 발생하기 전에 호출된다.
 - `postProcessAfterInitialization()` : 객체 생성 이후에 `@PostConstruct` 같은 초기화가 발생한 다음에 호출된다.
 
-### 빈 후처리기에서 객체 바꿔지는 예제 코드
+### 빈 후처리기에서 A 객체를 B 객체로 변경하는 예제 코드
 
 > Test
 
