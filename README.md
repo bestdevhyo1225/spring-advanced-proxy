@@ -947,5 +947,83 @@ public class BeanPostProcessorTest {
 ### 정리
 
 - 빈 후처리기는 빈을 조작하고, 변경할 수 있는 후킹 포인트이다.
-- 일반적으로 스프링 컨테이너가 등록하는, 특히 컴포넌트 스캔의 대상이 되는 빈들은 중간에 조작할 방법이 없는데, `빈 후처리기를 사용하면 등록하는 모든 빈을 중간에 조작할 수 있다.` (**`즉, Bean 객체를
-  Proxy 객체로 교체하는 것도 가능하다는 얘기!`**)
+- 일반적으로 스프링 컨테이너가 등록하는, 특히 컴포넌트 스캔의 대상이 되는 빈들은 중간에 조작할 방법이
+  없는데, `빈 후처리기를 사용하면 등록하는 모든 빈을 중간에 조작할 수 있다.` (**`즉, Bean 객체를 Proxy 객체로 교체하는 것도 가능하다는 얘기!`**)
+
+## V3 - Controller, Service, Repository (컴포넌트 스캔)
+
+> PackageLogTracePostProcessor
+
+```java
+
+@Slf4j
+public class PackageLogTracePostProcessor implements BeanPostProcessor {
+
+    private final String basePackage;
+    private final Advisor advisor;
+
+    public PackageLogTracePostProcessor(String basePackage, Advisor advisor) {
+        this.basePackage = basePackage;
+        this.advisor = advisor;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        log.info("param beanName={}, bean={}", beanName, bean.getClass());
+
+        // 프록시 적용 대상 여부 체크
+        // 프록시 적용 대상이 아니면, 원본을 그대로 반환
+        String packageName = bean.getClass().getPackageName();
+        if (!packageName.startsWith(basePackage)) {
+            return bean;
+        }
+
+        // 프록시 대상이면, 프록시를 만들어서 반환
+        ProxyFactory proxyFactory = new ProxyFactory(bean);
+        proxyFactory.addAdvisor(advisor);
+
+        Object proxy = proxyFactory.getProxy();
+
+        log.info("create proxy: target={}, proxy={}", bean.getClass(), proxy.getClass());
+
+        return proxy;
+    }
+}
+```
+
+모든 Bean 객체들은 생성이 되면, `PackageLogTracePostProcessor` 의 `postProcessAfterInitialization()` 메서드를 실행하게 된다. 이 때, 내부 로직의 조건에
+따라 원본 객체를 반환하거나, `프록시 객체를 반환한다.`
+
+> BeanPostProcessorConfig
+
+```java
+
+@Slf4j
+@Configuration
+@Import({AppV1Config.class, AppV2Config.class})
+public class BeanPostProcessorConfig {
+
+    @Bean
+    public PackageLogTracePostProcessor logTracePostProcessor(LogTrace logTrace) {
+        return new PackageLogTracePostProcessor("hello.proxy.app", getAdvisor(logTrace));
+    }
+
+    private Advisor getAdvisor(LogTrace logTrace) {
+        // Pointcut
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedNames("request*", "order*", "save*");
+
+        // Advice
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        // Advisor는 하나의 Pointcut과 Advice를 갖는다.
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+}
+```
+
+`V1`, `V2` 에 프록시를 적용할 때는 `수동으로 프록시를 등록` 했어야 했는데, `BeanPostProcessor` 의 `PackageLogTracePostProcessor` 구현체 덕분에 프록시가 자동으로
+생성된다.
+
+- 요약) **`프록시를 생성하는 코드가 @Configuration 파일에는 필요 없다.`** -> `PackageLogTracePostProcessor`
+  의 `postProcessAfterInitialization()` 메서드에서 프록시를 생성해주기 때문에 필요 없다.
