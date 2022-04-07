@@ -1043,3 +1043,28 @@ public class BeanPostProcessorConfig {
 ### 문제 해결
 
 `빈 후처리기를 통해 프록시 생성하는 부분을 하나로 집중했다.` 그리고 컴포넌트 스캔처럼 스프링이 직접 대상을 빈으로 등록하는 경우에도 `중간에 빈을 가로채서 원본 대신에 프록시를 스프링 빈에 등록할 수 있다.`
+
+## 스프링이 제공하는 빈 후처리기
+
+### AutoProxyCreator
+
+- `AnnotationAwareAspectJAutoProxyCreator` 라는 `빈 후처리기` 가 스프링 빈에 자동으로 등록된다.
+- `AnnotationAwareAspectJAutoProxyCreator` 는  스프링 빈으로 등록된 `Advisor` 를 자동으로 찾아서 프록시가 필요한 곳에 자동으로 프록시를 적용해준다.
+- `Advisor` 안에는 `Pointcut` 과 `Advice` 가 이미 포함되어 있기 때문에 `어떤 스프링 빈에 프록시를 적용해야 할 지 알 수 있으며(Pointcut)`, 필요한 곳에 `부가 기능을 적용한다.(Advice)`
+- `AnnotationAwareAspectJAutoProxyCreator` 는 `@AspectJ` 와 관련된 AOP 기능도 자동으로 찾아서 처리해준다.
+
+### 중요 - 포인트컷은 2가지에 사용된다.
+
+> **프록시 적용 여부 판단 - 생성 단계**
+
+- AutoProxyCreator는 포인트컷을 사용해서 `해당 빈이 프록시를 생성할 필요가 있는지 없는지 체크` 한다.
+- 클래스 + 메서드 조건을 모두 비교한다. 이 때 모든 메서드를 체크하는데, 포인트컷 조건에 하나 하나 매칭해본다. **`만약 조건에 맞는 것이 하나라도 있다면, 프록시를 생성한다.`**
+
+  - ex) OrderControllerV1 에는 `request()` 와 `noLog()` 가 있다. 여기서 `request()` 가 `조건에 만족` 하므로 프록시를 생성한다.
+
+> **어드바이스 적용 여부 판단 - 사용 단계**
+
+- 프록시가 호출 되었을때, 부가 기능인 어드바이스를 적용할 지 말지를 포인트컷을 보고 판단한다.
+- OrderControllerV1에는 `request()` 에 의해 프록시가 걸려있다.
+- `request()` 는 포인트컷 조건에 만족하므로 프록시는 어드바이스를 먼저 호출하고, target을 호출한다.
+- `noLog()` 는 현재 포인트컷 조건에 만족하지 않으므로 어드바이스를 호출하지 않고, 바로 target만 호출한다.
