@@ -1146,3 +1146,7 @@ public class LogTraceAspect {
 `BeanFactoryAspectJAdvisorBuilder` 클래스이다. `@Aspect` 정보를 기반으로 포인트컷, 어드바이스, 어드바이저를 생성하고, 보관하는 것을 담당한다.
 
 - `@Aspect` 정보 기반으로 어드바이저를 만들고, 빌더 내부에 캐시한다. 캐시에 어드바이저가 이미 만들어진 경우, 캐시에 저장된 어드바이저를 반환한다.
+
+## 횡단 관심사 (Cross-Cutting Concerns)
+
+- 지금까지 구현했던 LogTrace는 특정 기능 하나에만 관심있는 기능이 아니고, 애플리케이션 **`여러 기능들 사이에 걸쳐서 들어가는 관심사`** 이다.
