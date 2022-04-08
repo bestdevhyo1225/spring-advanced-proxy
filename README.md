@@ -1068,3 +1068,54 @@ public class BeanPostProcessorConfig {
 - OrderControllerV1에는 `request()` 에 의해 프록시가 걸려있다.
 - `request()` 는 포인트컷 조건에 만족하므로 프록시는 어드바이스를 먼저 호출하고, target을 호출한다.
 - `noLog()` 는 현재 포인트컷 조건에 만족하지 않으므로 어드바이스를 호출하지 않고, 바로 target만 호출한다.
+
+## @Aspect
+
+`포인트컷` 과 `어드바이스` 로 구성되어 있는 **`어드바이저`** 생성 기능을 지원한다. 주로 애노테이션 기반 프록시를 적용할 때, 필요하다.
+
+### @Around
+
+`@Around("execution(* hello.proxy.app..*(..))")`
+
+- `@Around` 값에 `포인트컷 표현식` 을 넣는다.
+- `@Around` 메서드는 `어드바이스` 가 된다.
+
+### ProceedingJoinPoint
+
+내부에 실제 `호출 대상`, `전달 인자`, `어떤 객체` 와 `어떤 메서드` 호출되었는지 정보가 포함되어 있다.
+
+### 예제 코드
+
+> LogTraceAspect
+
+```java
+@Slf4j
+@Aspect // @Component 어노테이션이 선언된 것이 아니기 때문에 Bean으로 등록해야 한다.
+public class LogTraceAspect {
+
+    private LogTrace logTrace;
+
+    public LogTraceAspect(LogTrace logTrace) {
+        this.logTrace = logTrace;
+    }
+
+    // 어드바이저 = 포인트컷 + 어드바이스
+    @Around("execution(* hello.proxy.app..*(..))") // 포인트컷
+    public Object execute(ProceedingJoinPoint joinPoint) throws Throwable { // 어드바이스
+        TraceStatus status = null;
+        try {
+            String message = joinPoint.getSignature().toShortString();
+            status = logTrace.begin(message);
+
+            // Target의 실제 메서드 호출
+            Object result = joinPoint.proceed();
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
