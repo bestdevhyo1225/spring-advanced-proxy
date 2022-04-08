@@ -1034,7 +1034,7 @@ public class BeanPostProcessorConfig {
 
 프록시를 직접 스프링 빈으로 등록하는 `ProxyFactoryConfigV1`, `ProxyFactoryConfigV2` 와 같은 설정 파일에는 프록시 설정이 지나치게 많다는 문제가 있다.
 
-- ex) 스프링 빈이 100개가 있고, 여기에 프록시를 통해 부가 기능을 적용하려면, 100개의 프록시 설정 코드가 들어가야 한다는 점 
+- ex) 스프링 빈이 100개가 있고, 여기에 프록시를 통해 부가 기능을 적용하려면, 100개의 프록시 설정 코드가 들어가야 한다는 점
 
 ### 문제2 - 컴포넌트 스캔
 
@@ -1049,8 +1049,9 @@ public class BeanPostProcessorConfig {
 ### AutoProxyCreator
 
 - `AnnotationAwareAspectJAutoProxyCreator` 라는 `빈 후처리기` 가 스프링 빈에 자동으로 등록된다.
-- `AnnotationAwareAspectJAutoProxyCreator` 는  스프링 빈으로 등록된 `Advisor` 를 자동으로 찾아서 프록시가 필요한 곳에 자동으로 프록시를 적용해준다.
-- `Advisor` 안에는 `Pointcut` 과 `Advice` 가 이미 포함되어 있기 때문에 `어떤 스프링 빈에 프록시를 적용해야 할 지 알 수 있으며(Pointcut)`, 필요한 곳에 `부가 기능을 적용한다.(Advice)`
+- `AnnotationAwareAspectJAutoProxyCreator` 는 스프링 빈으로 등록된 `Advisor` 를 자동으로 찾아서 프록시가 필요한 곳에 자동으로 프록시를 적용해준다.
+- `Advisor` 안에는 `Pointcut` 과 `Advice` 가 이미 포함되어 있기 때문에 `어떤 스프링 빈에 프록시를 적용해야 할 지 알 수 있으며(Pointcut)`, 필요한
+  곳에 `부가 기능을 적용한다.(Advice)`
 - `AnnotationAwareAspectJAutoProxyCreator` 는 `@AspectJ` 와 관련된 AOP 기능도 자동으로 찾아서 처리해준다.
 
 ### 중요 - 포인트컷은 2가지에 사용된다.
@@ -1060,7 +1061,7 @@ public class BeanPostProcessorConfig {
 - AutoProxyCreator는 포인트컷을 사용해서 `해당 빈이 프록시를 생성할 필요가 있는지 없는지 체크` 한다.
 - 클래스 + 메서드 조건을 모두 비교한다. 이 때 모든 메서드를 체크하는데, 포인트컷 조건에 하나 하나 매칭해본다. **`만약 조건에 맞는 것이 하나라도 있다면, 프록시를 생성한다.`**
 
-  - ex) OrderControllerV1 에는 `request()` 와 `noLog()` 가 있다. 여기서 `request()` 가 `조건에 만족` 하므로 프록시를 생성한다.
+    - ex) OrderControllerV1 에는 `request()` 와 `noLog()` 가 있다. 여기서 `request()` 가 `조건에 만족` 하므로 프록시를 생성한다.
 
 > **어드바이스 적용 여부 판단 - 사용 단계**
 
@@ -1089,8 +1090,9 @@ public class BeanPostProcessorConfig {
 > LogTraceAspect
 
 ```java
+
 @Slf4j
-@Aspect // @Component 어노테이션이 선언된 것이 아니기 때문에 Bean으로 등록해야 한다.
+@Aspect // @Component 어노테이션이 선언된 것이 아니기 때문에 Bean으로 등록해야 한다. 또는 @Component를 달아주면 된다.
 public class LogTraceAspect {
 
     private LogTrace logTrace;
@@ -1119,3 +1121,28 @@ public class LogTraceAspect {
     }
 }
 ```
+
+`@Around` 값에 `포인트컷` 표현식이 있기 때문에 어디에 적용하는지 알 수 있고, `@Around` 가 적용된 메서드는 부가 기능을 구현한 `어드바이스` 이다.
+
+### AnnotationAwareAspectJAutoProxyCreator
+
+자동 프록시 생성기는 2가지 일을 한다.
+
+1.`@Aspect` 를 보고 `어드바이저` 로 변환해서 저장한다.
+
+2. `어드바이저` 기반으로 프록시를 생성한다.
+
+즉, `AnnotationAware(애노테이션을 인식하는)` 기능도 있는 것이다.
+
+### @Aspect를 어드바이저로 변환해서 저장하는 과정
+
+1. **`실행`** : 스프링 애플리케이션 로딩 시점에 자동 프록시 생성기를 호출한다.
+2. **`모든 @Aspect Bean 조회`** : 자동 프록시 생성기는 스프링 컨테이너에서 `@Aspect` 가 붙은 스프링 Bean을 모두 조회한다.
+3. **`어드바이저 생성`** : `@Aspect 어드바이저 빌더` 를 통해 `@Aspect` 정보 기반으로 어드바이저를 생성한다.
+4. **`@Aspect 기반 어드바이저 저장`** : 생성한 어드바이저를 `@Aspect 어드바이저 빌더` 내부에 저장한다.
+
+### @Aspect 어드바이저 빌더
+
+`BeanFactoryAspectJAdvisorBuilder` 클래스이다. `@Aspect` 정보를 기반으로 포인트컷, 어드바이스, 어드바이저를 생성하고, 보관하는 것을 담당한다.
+
+- `@Aspect` 정보 기반으로 어드바이저를 만들고, 빌더 내부에 캐시한다. 캐시에 어드바이저가 이미 만들어진 경우, 캐시에 저장된 어드바이저를 반환한다.

@@ -8,7 +8,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 @Slf4j
-@Aspect // @Component 어노테이션이 선언된 것이 아니기 때문에 Bean으로 등록해야 한다.
+@Aspect // @Component 어노테이션이 선언된 것이 아니기 때문에 Bean으로 등록해야 한다. 또는 @Component를 달아주면 된다.
 public class LogTraceAspect {
 
     private final LogTrace logTrace;
